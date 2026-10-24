@@ -45,6 +45,17 @@ export class InventoryPage {
     return texts.map((t) => Number(t.replace('$', '')));
   }
 
+  async openProduct(name: string) {
+    await this.itemNames.filter({ hasText: name }).click();
+  }
+
+  /** Price shown for one product on the list, as a number. */
+  async priceOf(name: string): Promise<number> {
+    const item = this.page.getByTestId('inventory-item').filter({ hasText: name });
+    const text = await item.getByTestId('inventory-item-price').textContent();
+    return Number((text ?? '').replace('$', ''));
+  }
+
   async logout() {
     await this.menuButton.click();
     await this.logoutLink.click();

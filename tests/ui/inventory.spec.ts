@@ -21,6 +21,17 @@ test.describe('Inventory and session', () => {
     expect(prices).toEqual([...prices].sort((a, b) => a - b));
   });
 
+  test('products can be sorted by price, high to low', async ({ inventoryPage }) => {
+    await inventoryPage.sortBy('hilo');
+    const prices = await inventoryPage.prices();
+    expect(prices).toEqual([...prices].sort((a, b) => b - a));
+  });
+
+  test('products are listed A to Z by default', async ({ inventoryPage }) => {
+    const names = await inventoryPage.itemNames.allTextContents();
+    expect(names).toEqual([...names].sort());
+  });
+
   test('products can be sorted by name, Z to A', async ({ inventoryPage }) => {
     await inventoryPage.sortBy('za');
     const names = await inventoryPage.itemNames.allTextContents();
@@ -37,4 +48,14 @@ test.describe('Inventory and session', () => {
     await page.goto('/inventory.html');
     await expect(loginPage.error).toContainText('You can only access');
   });
+});
+
+test.describe('Pages that need a login', () => {
+  for (const path of ['/inventory.html', '/cart.html', '/checkout-step-one.html']) {
+    test(`${path} redirects a visitor who is not logged in`, async ({ page, loginPage }) => {
+      await page.goto(path);
+      await expect(loginPage.loginButton).toBeVisible();
+      await expect(loginPage.error).toContainText('You can only access');
+    });
+  }
 });
