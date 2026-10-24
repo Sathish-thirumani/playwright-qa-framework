@@ -8,8 +8,8 @@ API and UI test automation in TypeScript with Playwright, run in CI with GitHub 
 
 | Layer | Target | Coverage |
 |---|---|---|
-| UI | [Sauce Demo](https://www.saucedemo.com) | Login (valid, locked-out user, wrong password, empty fields), add and remove cart items, sorting by price and name, checkout, checkout validation, logout, no access after logout |
-| API | [Restful-Booker](https://restful-booker.herokuapp.com) | Health check, create and fetch a booking, search by guest name, token auth (valid and wrong credentials), authorised and unauthorised update and delete, invalid payload |
+| UI | [Sauce Demo](https://www.saucedemo.com) | Login (valid and slow users, locked-out, wrong password, unknown user, empty fields, dismissing the error, masked password); cart (badge count, contents, removing items, survives reload, continue shopping); sorting by price and name; product detail page; checkout (purchase, each required field, overview totals add up, cancel, empty cart after order); logout; pages that need a login |
+| API | [Restful-Booker](https://restful-booker.herokuapp.com) | Health check; create, fetch, list and search bookings; 404 for an unknown booking; field types of a booking; token auth (valid, wrong and empty credentials); full and partial update with and without a token; delete with and without a token; invalid payload |
 
 ## Tech
 
@@ -23,12 +23,12 @@ Playwright, TypeScript, dotenv, GitHub Actions.
 ├── src/
 │   ├── api/booking.client.ts          API client (the API equivalent of a page object)
 │   ├── config/env.ts                  Reads and validates environment variables
-│   ├── data/users.ts                  Test data kept apart from the tests
+│   ├── data/                          Test data kept apart from the tests: users, products
 │   ├── fixtures/test.ts               Fixtures that create page objects for each test
-│   └── pages/                         Page objects: login, inventory, checkout
+│   └── pages/                         Page objects: login, inventory, product, cart, checkout
 ├── tests/
 │   ├── api/booking.spec.ts            API tests
-│   └── ui/                            UI tests: login, inventory and session, checkout
+│   └── ui/                            UI tests: login, inventory and session, product, cart, checkout
 ├── .env.example                       Template for environment values
 ├── .nvmrc                             Node version used locally and in CI
 └── playwright.config.ts               UI (Chromium, Firefox) and API projects
@@ -54,7 +54,7 @@ The values in `.env.example` are the demo credentials the practice sites publish
 
 - **Page Object Model.** Locators and actions live in `src/pages`, so a selector change is fixed in one place and tests read as behaviour.
 - **Fixtures.** Playwright fixtures create the page objects each test needs, which keeps setup out of the tests.
-- **Data-driven negative cases.** Login failures are one table of cases, so adding a case is one line.
+- **Data-driven negative cases.** Login failures, checkout's required fields and the pages that need a login are each one table of cases, so adding a case is one line.
 - **Independent tests.** Each test sets up its own state, so tests run in parallel and in any order. API tests delete the bookings they create, leaving the shared sandbox as they found it.
 - **Stable waits.** Web-first assertions and Playwright's auto-waiting replace fixed sleeps. Retries are enabled only in CI, and a trace is captured on the first retry.
 - **Config outside the code.** Base URLs and credentials come from environment variables, with a committed `.env.example` and no secrets in the repo.
