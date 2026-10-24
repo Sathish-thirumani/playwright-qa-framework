@@ -13,12 +13,26 @@ export type Booking = {
 export class BookingClient {
   constructor(private readonly request: APIRequestContext) {}
 
+  /** Raw auth call, for tests that check the response itself. */
+  auth(username: string, password: string) {
+    return this.request.post('/auth', { data: { username, password } });
+  }
+
+  /** Returns a token for the configured user, or fails with a clear message. */
   async createToken(): Promise<string> {
-    const res = await this.request.post('/auth', {
-      data: { username: env.apiUser, password: env.apiPassword },
-    });
+    const res = await this.auth(env.apiUser, env.apiPassword);
+    if (!res.ok()) {
+      throw new Error(`Auth request failed with HTTP ${res.status()}`);
+    }
     const body = await res.json();
+    if (!body.token) {
+      throw new Error(`Auth did not return a token: ${JSON.stringify(body)}`);
+    }
     return body.token;
+  }
+
+  ping() {
+    return this.request.get('/ping');
   }
 
   create(booking: Booking) {
@@ -27,6 +41,10 @@ export class BookingClient {
 
   get(id: number) {
     return this.request.get(`/booking/${id}`);
+  }
+
+  findByName(firstname: string, lastname: string) {
+    return this.request.get('/booking', { params: { firstname, lastname } });
   }
 
   update(id: number, booking: Booking, token: string) {
