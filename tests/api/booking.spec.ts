@@ -61,6 +61,32 @@ test.describe('Booking API', () => {
     expect(ids).toContain(id);
   });
 
+  test('a booking that does not exist returns 404', async () => {
+    expect((await client.get(999_999_999)).status()).toBe(404);
+  });
+
+  test('the booking list returns numeric ids', async () => {
+    const res = await client.list();
+    expect(res.ok()).toBeTruthy();
+    const list = await res.json();
+    expect(Array.isArray(list)).toBeTruthy();
+    expect(list.length).toBeGreaterThan(0);
+    for (const item of list.slice(0, 20)) {
+      expect(typeof item.bookingid).toBe('number');
+    }
+  });
+
+  test('a fetched booking has the documented field types', async () => {
+    const id = await createBooking();
+    const b = await (await client.get(id)).json();
+    expect(typeof b.firstname).toBe('string');
+    expect(typeof b.lastname).toBe('string');
+    expect(typeof b.totalprice).toBe('number');
+    expect(typeof b.depositpaid).toBe('boolean');
+    expect(b.bookingdates.checkin).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(b.bookingdates.checkout).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+
   test('valid credentials return a token', async () => {
     const token = await client.createToken();
     expect(token).toMatch(/^\w+$/);
@@ -68,6 +94,13 @@ test.describe('Booking API', () => {
 
   test('wrong credentials do not return a token', async () => {
     const res = await client.auth('admin', 'wrong-password');
+    const body = await res.json();
+    expect(body.token).toBeUndefined();
+    expect(body.reason).toBe('Bad credentials');
+  });
+
+  test('empty credentials do not return a token', async () => {
+    const res = await client.auth('', '');
     const body = await res.json();
     expect(body.token).toBeUndefined();
     expect(body.reason).toBe('Bad credentials');
@@ -92,6 +125,25 @@ test.describe('Booking API', () => {
     const res = await client.remove(id, 'invalid-token');
     expect(res.status()).toBe(403);
     expect((await client.get(id)).ok()).toBeTruthy();
+  });
+
+  test('a partial update changes only the given fields', async () => {
+    const id = await createBooking();
+    const token = await client.createToken();
+    const res = await client.partialUpdate(id, { firstname: 'Meera', additionalneeds: 'Lunch' }, token);
+    expect(res.status()).toBe(200);
+    expect(await res.json()).toMatchObject({
+      ...validBooking,
+      firstname: 'Meera',
+      additionalneeds: 'Lunch',
+    });
+  });
+
+  test('a partial update without a valid token is rejected', async () => {
+    const id = await createBooking();
+    const res = await client.partialUpdate(id, { firstname: 'Meera' }, 'invalid-token');
+    expect(res.status()).toBe(403);
+    expect((await (await client.get(id)).json()).firstname).toBe(validBooking.firstname);
   });
 
   test('a deleted booking can no longer be fetched', async () => {

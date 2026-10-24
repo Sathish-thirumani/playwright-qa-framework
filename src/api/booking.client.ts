@@ -43,6 +43,10 @@ export class BookingClient {
     return this.request.get(`/booking/${id}`);
   }
 
+  list() {
+    return this.request.get('/booking');
+  }
+
   findByName(firstname: string, lastname: string) {
     return this.request.get('/booking', { params: { firstname, lastname } });
   }
@@ -50,6 +54,13 @@ export class BookingClient {
   update(id: number, booking: Booking, token: string) {
     return this.request.put(`/booking/${id}`, {
       data: booking,
+      headers: { Cookie: `token=${token}` },
+    });
+  }
+
+  partialUpdate(id: number, changes: Partial<Booking>, token: string) {
+    return this.request.patch(`/booking/${id}`, {
+      data: changes,
       headers: { Cookie: `token=${token}` },
     });
   }
